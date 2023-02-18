@@ -58,7 +58,6 @@ std::string Socket::recvMsg() {
             throw std::runtime_error("Receive error!");
         }
         message.append(buffer, received);
-        std::cout << message << std::endl;
     } while (received == size);
     return message;
 }

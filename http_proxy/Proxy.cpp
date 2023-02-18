@@ -1,4 +1,5 @@
 #include "Socket.h"
+#include "HTTPRequest.h"
 #include <iostream>
 #include <exception>
 
@@ -11,7 +12,8 @@ int main(int argc, char ** argv) {
     try {
         ServerSocket server(port);
         Socket client = server.acceptClient();
-        std::cout << client.recvMsg() << std::endl;
+        HTTPRequest request(client.recvMsg());
+        std::cout << request.getMethod() << std::endl;
         client.sendMsg(std::string("HTTP 200 ok that is great\n\nHello World yes!\n"));
     } catch (std::runtime_error & e) {
         std::cerr << e.what() << std::endl;

@@ -1,12 +1,12 @@
 TARGETS=Proxy
 CFLAGS=-std=gnu++11 -pedantic -Werror -Wall -ggdb
-OBJS=$(patsubst %,%.o,$(TARGETS)) Socket.o
+OBJS=$(patsubst %,%.o,$(TARGETS)) Socket.o HTTPRequest.o
 
 all: $(TARGETS)
 clean:
 	rm -f *~ $(TARGETS) $(OBJS)
 
-Proxy: Proxy.o Socket.o
+Proxy: $(OBJS)
 	g++ -o $@ $^
 
 %.o: %.cpp

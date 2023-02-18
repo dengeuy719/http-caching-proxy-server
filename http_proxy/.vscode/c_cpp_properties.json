@@ -15,7 +15,8 @@
             "intelliSenseMode": "macos-clang-arm64",
             "compilerArgs": [
                 "-Wno-c++11-extensions"
-            ]
+            ],
+            "configurationProvider": "ms-vscode.makefile-tools"
         }
     ],
     "version": 4
