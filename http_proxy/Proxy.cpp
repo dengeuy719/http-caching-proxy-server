@@ -14,7 +14,7 @@ int main(int argc, char ** argv) {
         Socket client = server.acceptClient();
         HTTPRequest request(client.recvMsg());
         std::cout << request.getMethod() << std::endl;
-        client.sendMsg(std::string("HTTP 200 ok that is great\n\nHello World yes!\n"));
+        client.sendMsg(std::string("HTTP 200 ok that is great\r\n\r\nHello World yes!\n"));
     } catch (std::runtime_error & e) {
         std::cerr << e.what() << std::endl;
         exit(EXIT_FAILURE);

@@ -25,7 +25,7 @@ public:
     ~Socket();
     
     // Send a message into the socket.
-    void sendMsg(const std::string & message);
+    void sendMsg(const std::string & message) const;
 
     // Receive message from the socket.
     std::string recvMsg();

@@ -30,7 +30,7 @@ Socket::~Socket() {
     close(socket_fd);
 }
 
-void Socket::sendMsg(const std::string & message) {
+void Socket::sendMsg(const std::string & message) const {
     size_t sentSize = 0;
     size_t remaining = message.size();
     const size_t size = 1024;

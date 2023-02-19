@@ -3,24 +3,24 @@
 
 #include <string>
 #include <map>
+#include "HTTPMessage.h"
 
-class HTTPRequest {
+class HTTPRequest: public HTTPMessage {
 private:
-    std::string content;
     std::string method;
     std::string host;
     std::string URI;
-    std::map<std::string, std::string> header;
+    std::string ID;
 
-    void parse();
+    virtual void parseStartLine() override;
 
 public:
 
-    HTTPRequest(std::string _content);
+    HTTPRequest(std::string _content): HTTPMessage(_content) {}
 
     const std::string & getMethod() const;
 
-    void send() const;
+    std::string getID() const;
 
 };
 

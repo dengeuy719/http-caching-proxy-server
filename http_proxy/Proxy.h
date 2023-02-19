@@ -3,9 +3,14 @@
 
 #include <string>
 #include <exception>
+#include "HTTPRequest.h"
 
 class Proxy {
 public:
+
+    void handle_request(const HTTPRequest & req);
+
+    
 };
 
 #endif
