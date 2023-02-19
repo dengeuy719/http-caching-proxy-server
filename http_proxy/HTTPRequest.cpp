@@ -8,7 +8,7 @@ const std::string & HTTPRequest::getMethod() const {
 }
 
 void HTTPRequest::parseStartLine() {
-    method = start_line.substr(0, start_line.find(" "));
+    method = startLine.substr(0, startLine.find(" "));
     if (method != "GET" && method != "POST" && method != "CONNECT") {
         throw std::runtime_error("Invalid HTTP method: " + method);
     }

@@ -8,7 +8,7 @@
 class HTTPMessage {
 protected:
     std::string content;
-    std::string start_line;
+    std::string startLine;
     std::map<std::string, std::string> header;
 
     void parse();
