@@ -7,6 +7,6 @@ void HTTPMessage::send(const Socket & socket) const {
 }
 
 void HTTPMessage::parse() {
-    start_line = content.substr(0, content.find("\r\n"));
+    startLine = content.substr(0, content.find("\r\n"));
     
 }
