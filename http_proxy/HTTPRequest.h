@@ -16,11 +16,18 @@ private:
 
 public:
 
-    HTTPRequest(std::string _content): HTTPMessage(_content) {}
+    HTTPRequest(std::string _content): HTTPMessage(_content) { ID = generateRequestID(); }
 
-    const std::string & getMethod() const;
+    const std::string & getMethod() const { return method; }
+    const std::string & getHost() const { return host; }
+    const std::string & getURI() const { return URI; }
+    const std::string & getID() const { return ID; }
 
-    std::string getID() const;
+    void printRequset();
+ 
+
+
+
 
 };
 
