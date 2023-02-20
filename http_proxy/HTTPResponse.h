@@ -7,6 +7,9 @@
 
 class HTTPResponse: public HTTPMessage {
 private:
+    std::string URI;
+    std::string statusCode;
+    std::string statusMsg;
 
     virtual void parseStartLine() override;
 
@@ -14,6 +17,11 @@ public:
 
     HTTPResponse(std::string _content): HTTPMessage(_content) {}
 
+    const std::string & getURI() const { return URI; }
+    const std::string & getstatusCode() const { return statusCode; }
+    const std::string & getstatusMsg() const { return statusMsg; }
+
+    void checkCache(std::string ID);
 };
 
 #endif
