@@ -21,8 +21,10 @@ HTTPRequest::HTTPRequest(http::request<http::dynamic_body> & _request, boost::as
     // Initialize the serversocket.
     serverSocket.reset(new boost::asio::ip::tcp::socket(io_context));
     const std::string host = getHeader("Host");
+    std::cout << printRequset() <<std::endl;
     boost::asio::ip::tcp::resolver resolver(io_context);
     boost::asio::connect(*serverSocket, resolver.resolve(host, "http"));
+    std::cout << "end of ctor" <<std::endl;
 }
 
 std::string HTTPRequest::getMethod() const {
@@ -38,7 +40,6 @@ std::string HTTPRequest::getHeader(const std::string & headerName) const {
         return std::string(headerValue.data(), headerValue.size());
     }
 }
-
 
 std::chrono::system_clock::time_point convertIDToTimePoint(const std::string& id) {
     long long timestamp = std::stoll(id);

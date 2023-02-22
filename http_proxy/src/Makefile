@@ -1,5 +1,6 @@
 TARGETS=Proxy
-CFLAGS=-std=gnu++14 -pedantic -Werror -Wall -ggdb -I /opt/homebrew/Cellar/boost/1.81.0_1/include -L /opt/homebrew/Cellar/boost/1.81.0_1/lib -lboost_filesystem -lboost_system
+CFLAGS=-std=gnu++14 -pedantic -Werror -Wall -ggdb -pthread
+LDFLAGS=-pthread
 OBJS=$(patsubst %,%.o,$(TARGETS)) Proxy.o HTTPRequest.o
 
 all: $(TARGETS)
@@ -7,7 +8,7 @@ clean:
 	rm -f *~ $(TARGETS) $(OBJS)
 
 Proxy: $(OBJS)
-	g++ -o $@ $^
+	g++ -o $@ $^ $(LDFLAGS)
 
 %.o: %.cpp
 	g++ $(CFLAGS) -c $<
