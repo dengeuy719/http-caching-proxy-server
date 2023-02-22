@@ -3,15 +3,15 @@
 
 #include <string>
 #include <map>
-#include "HTTPMessage.h"
+#include "boost/asio.hpp"
+#include "boost/beast.hpp"
 
-class HTTPResponse: public HTTPMessage {
+namespace http = boost::beast::http;
+
+class HTTPResponse {
 private:
-    std::string URI;
-    std::string statusCode;
-    std::string statusMsg;
 
-    virtual void parseStartLine() override;
+    
 
 public:
 

@@ -3,14 +3,20 @@
 #include "HTTPRequest.h"
 #include "Socket.h"
 #include "include.h"
+#include "boost/beast.hpp"
 
 
-std::string generateRequestID() {
+void HTTPRequest::generateRequestID() {
     auto now = std::chrono::system_clock::now();
     auto timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(
         now.time_since_epoch());
-    auto id = std::to_string(timestamp.count());
-    return id;
+    ID = std::to_string(timestamp.count());
+}
+
+HTTPRequest::HTTPRequest(http::request<http::dynamic_body> & _request, boost::asio::ip::tcp::socket & _socket): 
+        request(_request), clientSocket(_socket) { 
+    generateRequestID(); 
+    // Initialize the serversocket.
 }
 
 std::chrono::system_clock::time_point convertIDToTimePoint(const std::string& id) {
@@ -19,21 +25,7 @@ std::chrono::system_clock::time_point convertIDToTimePoint(const std::string& id
     return std::chrono::system_clock::time_point(ms);
 }
 
-void HTTPRequest::parseStartLine() {
-    size_t methodPos = startLine.find(" ");
-    method = startLine.substr(0, methodPos);
-    if (method != "GET" && method != "POST" && method != "CONNECT") {
-        throw std::runtime_error("Invalid HTTP method: " + method);
-    }
-    size_t URIPos = startLine.find(" ", methodPos+1);
-    //std::string URL = startLine.substr(methodPos+1, URIPos-methodPos-1);// "/anypage.html"
-    URI = startLine.substr(URIPos+1); // "HTTP/1.1"
-    std::string key = "Host";
-    auto it = header.find(key);
-    host = it->second;
-}
-
-void HTTPRequest::printRequset() {
+const std::string & HTTPRequest::printRequset() const {
     std::chrono::system_clock::time_point tp = convertIDToTimePoint(ID);
     std::time_t time = std::chrono::system_clock::to_time_t(tp);
     std::stringstream str;
@@ -41,3 +33,5 @@ void HTTPRequest::printRequset() {
     return str
 }
 
+HTTPRequest::~HTTPRequest() {
+}
