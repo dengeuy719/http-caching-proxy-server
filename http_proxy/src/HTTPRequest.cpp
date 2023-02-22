@@ -1,4 +1,5 @@
 #include <string>
+#include <string_view>
 #include <sstream>
 #include "HTTPRequest.h"
 #include "include.h"
@@ -25,7 +26,8 @@ HTTPRequest::HTTPRequest(http::request<http::dynamic_body> & _request, boost::as
 }
 
 std::string HTTPRequest::getMethod() const {
-    return http::to_string(request.method());
+    auto method = http::to_string(request.method());
+    return std::string(method.data(), method.size());
 }
 
 std::string HTTPRequest::getHeader(const std::string & headerName) const {
