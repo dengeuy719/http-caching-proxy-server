@@ -30,8 +30,8 @@ namespace http = boost::beast::http;
 void proxy_run(int port) {
     boost::asio::io_context io_context;
     boost::asio::ip::tcp::acceptor acceptor(io_context, boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v4(), port));
-    int i = 1;
-    while (i++ == 1) {
+    //int i = 1;
+    while (true) {
         boost::asio::ip::tcp::socket socket(io_context);
         acceptor.accept(socket);
         handle_request(std::move(socket));
@@ -45,7 +45,6 @@ void handle_request(boost::asio::ip::tcp::socket && socket) {
 
     
     HTTPRequest req(request, socket);
-    
     http::response<http::dynamic_body> response = req.send();
     
     req.sendBack(response);
