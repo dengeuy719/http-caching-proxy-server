@@ -11,9 +11,9 @@ class HTTPRequest {
 private:
     
     // Request from client.
-    const http::request<http::dynamic_body> & const request;
+    std::unique_ptr<http::request<http::dynamic_body> > request;
     // Client socket that request from.
-    const boost::asio::ip::tcp::socket & const clientSocket;
+    std::unique_ptr<boost::asio::ip::tcp::socket> clientSocket;
     // Server socket to send request.
     boost::asio::ip::tcp::socket serverSocket;
     // Request ID, unique for every incoming request.
@@ -23,10 +23,10 @@ private:
 
 public:
 
-    HTTPRequest(http::request<http::dynamic_body> & _request, boost::asio::ip::tcp::socket & _socket);
+    HTTPRequest(http::request<http::dynamic_body> * _request, boost::asio::ip::tcp::socket * _socket);
     
     // Get the ID of this request.
-    const std::string & getID() const { return ID; }
+    const std::string & getID() const { return ID; };
 
     // Get the method of this request.
     const std::string & getMethod() const;
@@ -38,14 +38,15 @@ public:
     const std::string & printRequset() const;
 
     // Send the request to its target server and wait for response.
-    http::response<http::dynamic_body> & send() const { send(request); };
+    http::response<http::dynamic_body> & send() const { return send(request); };
 
     // Send another request to its target server and wait for response.
     http::response<http::dynamic_body> & send(const http::request<http::dynamic_body> & req) const;
 
     void sendBack(const http::response<http::dynamic_body> & response) const;
-
-    boolean operator==(const HTTPRequest & rhs) const;
+    
+    // Check by url in http request
+    bool operator==(const HTTPRequest & rhs) const { return request.target() == rhs.request.target(); };
 
     ~HTTPRequest();
 

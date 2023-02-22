@@ -23,15 +23,15 @@ void handle_request(boost::asio::ip::tcp::socket && socket) {
     boost::beast::flat_buffer buffer;
     http::read(socket, buffer, request);
     HTTPRequest req(request, socket);
-    if (request.method() == http::verb::get) {
-        handle_GET(req);
-    } else if (request.method() == http::verb::post) {
-        handle_POST();
-    } else if (request.method() == http::verb::connect) {
-        handle_CONNECT();
-    } else {
-        throw std::runtime_error("Cannot handle the request!");
-    }
+    // if (request.method() == http::verb::get) {
+    //     handle_GET(req);
+    // } else if (request.method() == http::verb::post) {
+    //     handle_POST();
+    // } else if (request.method() == http::verb::connect) {
+    //     handle_CONNECT();
+    // } else {
+    //     throw std::runtime_error("Cannot handle the request!");
+    // }
     // http::response<http::string_body> response;
     // response.result(http::status::ok);
     // response.set(http::field::server, "Boost.Beast");
