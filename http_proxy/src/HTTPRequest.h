@@ -4,6 +4,8 @@
 #include <string>
 #include <map>
 #include "boost/beast.hpp"
+#include "boost/asio.hpp"
+
 
 namespace http = boost::beast::http;
 
@@ -11,11 +13,13 @@ class HTTPRequest {
 private:
     
     // Request from client.
-    std::unique_ptr<http::request<http::dynamic_body> > request;
+    http::request<http::dynamic_body> & request;
     // Client socket that request from.
-    std::unique_ptr<boost::asio::ip::tcp::socket> clientSocket;
+    boost::asio::ip::tcp::socket & clientSocket;
     // Server socket to send request.
-    boost::asio::ip::tcp::socket serverSocket;
+    std::unique_ptr<boost::asio::ip::tcp::socket> serverSocket;
+    // io_context.
+    boost::asio::io_context io_context;
     // Request ID, unique for every incoming request.
     std::string ID;
     // Assign each request an ID.
@@ -23,27 +27,27 @@ private:
 
 public:
 
-    HTTPRequest(http::request<http::dynamic_body> * _request, boost::asio::ip::tcp::socket * _socket);
+    HTTPRequest(http::request<http::dynamic_body> & _request, boost::asio::ip::tcp::socket & _socket);
     
     // Get the ID of this request.
     const std::string & getID() const { return ID; };
 
     // Get the method of this request.
-    const std::string & getMethod() const;
+    std::string getMethod() const;
 
     // Get header from the request, throw an exception if not exist.
-    const std::string & getHeader(const std::string & headerName) const;
+    std::string getHeader(const std::string & headerName) const;
 
     // Get a string representation of this request as a record.
-    const std::string & printRequset() const;
+    std::string  printRequset() const;
 
     // Send the request to its target server and wait for response.
-    http::response<http::dynamic_body> & send() const { return send(request); };
+    http::response<http::dynamic_body> send() const { return send(request); };
 
     // Send another request to its target server and wait for response.
-    http::response<http::dynamic_body> & send(const http::request<http::dynamic_body> & req) const;
+    http::response<http::dynamic_body> send(const http::request<http::dynamic_body> & req) const;
 
-    void sendBack(const http::response<http::dynamic_body> & response) const;
+    void sendBack(http::response<http::dynamic_body> & response);
     
     // Check by url in http request
     bool operator==(const HTTPRequest & rhs) const { return request.target() == rhs.request.target(); };

@@ -10,28 +10,28 @@
 
 namespace http = boost::beast::http;
 
-void handle_GET(HTTPRequest & request) {
-    Cache & cache = Cache::getInstance();
-    std::string log_content(req.getID() + ": ");
-    http::response<http::dynamic_body> response;
-    bool inCache = true;
-    try {
-        response = cache.inquire(req);
-    } catch (std::out_of_range & e) {
-        log_content.append("not in cache");
-        inCache = false;
-    }
-    if (inCache) {
-        Validator va(response);
+// void handle_GET(HTTPRequest & request) {
+//     Cache & cache = Cache::getInstance();
+//     std::string log_content(request.getID() + ": ");
+//     http::response<http::dynamic_body> response;
+//     bool inCache = true;
+//     try {
+//         response = cache.inquire(request);
+//     } catch (std::out_of_range & e) {
+//         log_content.append("not in cache");
+//         inCache = false;
+//     }
+//     if (inCache) {
+//         Validator va(response);
         
-    }
-}
+//     }
+// }
 
 void proxy_run(int port) {
     boost::asio::io_context io_context;
     boost::asio::ip::tcp::acceptor acceptor(io_context, boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v4(), port));
-    //int i = 1;
-    while (true) {
+    int i = 1;
+    while (i++ == 1) {
         boost::asio::ip::tcp::socket socket(io_context);
         acceptor.accept(socket);
         handle_request(std::move(socket));
@@ -42,7 +42,13 @@ void handle_request(boost::asio::ip::tcp::socket && socket) {
     http::request<http::dynamic_body> request;
     boost::beast::flat_buffer buffer;
     http::read(socket, buffer, request);
+
+    
     HTTPRequest req(request, socket);
+    
+    http::response<http::dynamic_body> response = req.send();
+    
+    req.sendBack(response);
     // if (request.method() == http::verb::get) {
     //     handle_GET(req);
     // } else if (request.method() == http::verb::post) {
