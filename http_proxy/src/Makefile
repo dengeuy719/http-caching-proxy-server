@@ -1,5 +1,5 @@
 TARGETS=Proxy
-CFLAGS=-std=gnu++14 -pedantic -Werror -Wall -ggdb -pthread
+CFLAGS=-std=gnu++17 -pedantic -Werror -Wall -ggdb -pthread
 LDFLAGS=-pthread
 OBJS=$(patsubst %,%.o,$(TARGETS)) Proxy.o HTTPRequest.o
 

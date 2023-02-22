@@ -1,7 +1,7 @@
 #include "Proxy.h"
 #include "HTTPRequest.h"
 #include "Cache.h"
-#include "Validator.h"
+#include "HTTPResponse.h"
 #include <iostream>
 #include <exception>
 #include <string>
