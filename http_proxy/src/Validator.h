@@ -1,14 +1,17 @@
 #ifndef _VALIDATOR_H_
 #define _VALIDATOR_H_
-#include "HTTPResponse.h"
+
 #include <string>
+#include "boost/beast.hpp"
+
+namespace http = boost::beast::http;
 
 class Validator {
 private:
-    const HTTPResponse & res;
+    const http::response<http::dynamic_body> & res;
 public:
 
-    Validator(const HTTPResponse & _res): res(_res) {}
+    Validator(const http::response<http::dynamic_body> & _res): res(_res) {}
 
     std::string isCacheable() const;
 

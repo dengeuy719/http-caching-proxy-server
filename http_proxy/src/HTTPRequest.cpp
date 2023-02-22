@@ -1,7 +1,6 @@
 #include <string>
 #include <sstream>
 #include "HTTPRequest.h"
-#include "Socket.h"
 #include "include.h"
 #include "boost/beast.hpp"
 

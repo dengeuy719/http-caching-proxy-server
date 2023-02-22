@@ -45,10 +45,10 @@ public:
 
     void sendBack(const http::response<http::dynamic_body> & response) const;
 
-    boolean operator==(const HTTPRequest & rhs) const;
+    bool operator==(const HTTPRequest & rhs) const;
 
     ~HTTPRequest();
-
+    
 
 };
 

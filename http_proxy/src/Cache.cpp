@@ -1,19 +1,22 @@
 #include "Cache.h"
 #include <map>
+#include "boost/beast.hpp"
 
-Cache::Cache(): cache(new std::map<HTTPRequest, HTTPResponse>) {}
+namespace http = boost::beast::http;
+
+Cache::Cache(): cache(new std::map<HTTPRequest, http::response<http::dynamic_body>>) {}
 
 Cache & Cache::getInstance() {
     static Cache c;
     return c;
 }
 
-const HTTPResponse & Cache::inquire(const HTTPRequest & req) const {
+const http::response<http::dynamic_body> & Cache::inquire(const HTTPRequest & req) const {
     std::shared_lock<std::shared_timed_mutex> lock(_mutex);
     return cache->at(req);
 }
 
-void Cache::insert(const HTTPRequest & req, const HTTPResponse & res) {
+void Cache::insert(const HTTPRequest & req, const http::response<http::dynamic_body> & res) {
     std::unique_lock<std::shared_timed_mutex> lock(_mutex);
-    cache->insert(std::make_pair(req, res));
+    (*cache)[req] = res;
 }

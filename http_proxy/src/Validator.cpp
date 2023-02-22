@@ -1,23 +1,51 @@
 #include "Validator.h"
+#include "boost/beast.hpp"
+#include <string>
+
+namespace http = boost::beast::http;
 
 std::string Validator::isCacheable() const {
-    try {
-        const std::string & cacheControl = res.getFromHeader("Cache-Control");
-        if (cacheControl.find("private") != std::string::npos) {
+    auto it = res.base().find(http::field::cache_control);
+    bool expires = false;
+    bool can_validate = false;
+    bool need_validation = false;
+    if (it != res.base().end()) {
+        std::string cache_control = it->value();
+        if (cache_control.find("private") != std::string::npos) {
             return "Cache-Control: private";
         }
-        if (cacheControl.find("no-store") != std::string::npos) {
+        if (cache_control.find("no-store") != std::string::npos) {
             return "Cache-Control: no-store";
         }
-    } catch (std::out_of_range & e) {
-        return "Yes";
+        if (cache_control.find("max-age=") != std::string::npos) {
+            expires = true;
+        }
+        if (cache_control.find("max-age=0") != std::string::npos ||
+            cache_control.find("no-cache") != std::string::npos ||
+            cache_control.find("must-revalidate") != std::string::npos) {
+            need_validation = true;
+        }
+    } else {
+        return "No Cache-Control header is found!";
     }
-    try {
-        const std::string & expires = res.getFromHeader("Expires");
-        
+    it = res.base().find(http::field::expires);
+    if (it != res.base().end()) {
+        expires = true;
     }
+    it = res.base().find(http::field::etag);
+    if (it != res.base().end()) {
+        can_validate = true;
+    }
+    it = res.base().find(http::field::last_modified);
+    if (it != res.base().end()) {
+        can_validate = true;
+    }
+    return "YES";
 }
 
 std::string Validator::checkExpire() const {
-    try
+    auto it = res.base().find(http::field::expires);
+    if (it != res.base().end()) {
+
+    }
 }

@@ -1,11 +1,31 @@
 #include "Proxy.h"
 #include "HTTPRequest.h"
+#include "Cache.h"
+#include "Validator.h"
 #include <iostream>
 #include <exception>
+#include <string>
 #include "boost/asio.hpp"
 #include "boost/beast.hpp"
 
 namespace http = boost::beast::http;
+
+void handle_GET(HTTPRequest & request) {
+    Cache & cache = Cache::getInstance();
+    std::string log_content(req.getID() + ": ");
+    http::response<http::dynamic_body> response;
+    bool inCache = true;
+    try {
+        response = cache.inquire(req);
+    } catch (std::out_of_range & e) {
+        log_content.append("not in cache");
+        inCache = false;
+    }
+    if (inCache) {
+        Validator va(response);
+        
+    }
+}
 
 void proxy_run(int port) {
     boost::asio::io_context io_context;
