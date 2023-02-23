@@ -7,10 +7,10 @@
 #include "HTTPRequest.h"
 
 
-void proxy_run(int port);
+void proxy_run(int);
 
-void handle_request(boost::asio::ip::tcp::socket && socket);
+void handle_request(boost::asio::ip::tcp::socket &&);
 
-void handle_GET(HTTPRequest & request);
+void handle_GET(HTTPRequest &);
 
 #endif

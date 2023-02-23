@@ -4,6 +4,6 @@
 #include <ctime>
 #include <string>
 
-std::time_t parseTime(const std::string & time, const std::string & pattern);
+std::time_t parseTime(const std::string &&, const std::string &&);
 
 #endif

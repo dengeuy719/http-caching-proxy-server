@@ -2,8 +2,8 @@
 #define _CACHE_H_
 
 #include "HTTPRequest.h"
+#include "HTTPResponse.h"
 #include <map>
-#include <shared_mutex>
 #include "boost/asio.hpp"
 #include "boost/beast.hpp"
 
@@ -12,22 +12,22 @@ namespace http = boost::beast::http;
 class Cache {
 private:
 
-    std::unique_ptr<std::map<HTTPRequest, http::response<http::dynamic_body>>> cache;
-    mutable std::shared_timed_mutex _mutex;
+    std::unique_ptr<std::map<HTTPRequest, HTTPResponse>> cache;
+    mutable std::mutex _mutex;
 
     Cache();
 
-    Cache(const Cache & rhs) = delete;
+    Cache(const Cache &) = delete;
 
-    Cache & operator=(const Cache & rhs) = delete;
+    Cache & operator=(const Cache &) = delete;
 
 public:
 
     static Cache & getInstance();
 
-    const http::response<http::dynamic_body> & inquire(const HTTPRequest & req) const;
+    const HTTPResponse & inquire(const HTTPRequest &) const;
 
-    void insert(const HTTPRequest & req, const http::response<http::dynamic_body> & res);
+    void insert(const HTTPRequest &, const HTTPResponse &);
 
 };
 

@@ -5,6 +5,7 @@
 #include "include.h"
 #include "boost/beast.hpp"
 #include "boost/asio.hpp"
+#include "Log.h"
 
 namespace http = boost::beast::http;
 
@@ -21,7 +22,7 @@ HTTPRequest::HTTPRequest(http::request<http::dynamic_body> & _request, boost::as
     // Initialize the serversocket.
     serverSocket.reset(new boost::asio::ip::tcp::socket(io_context));
     const std::string host = getHeader("Host");
-    std::cout << printRequset() <<std::endl;
+    printRequset();
     boost::asio::ip::tcp::resolver resolver(io_context);
     boost::asio::connect(*serverSocket, resolver.resolve(host, "http"));
     std::cout << "end of ctor" <<std::endl;
@@ -47,29 +48,58 @@ std::chrono::system_clock::time_point convertIDToTimePoint(const std::string& id
     return std::chrono::system_clock::time_point(ms);
 }
 
-std::string HTTPRequest::printRequset() const {
+std::string HTTPRequest::request_line() const {
+    //const std::string host = request.base()[http::field::host].to_string();
+    std::string firstLine = getMethod() + " " + std::string(request.target().data(), request.target().size()) + " " + "HTTP/" + 
+        std::to_string(request.version() / 10) + "." + std::to_string(request.version() % 10);
+    return firstLine;
+}
+
+void HTTPRequest::printRequset() const {
+    Log & log = Log::getInstance();
     std::chrono::system_clock::time_point tp = convertIDToTimePoint(ID);
     std::time_t time = std::chrono::system_clock::to_time_t(tp);
     std::stringstream str;
-    //const std::string host = request.base()[http::field::host].to_string();
-    const std::string firstLine = getMethod() + " " + std::string(request.target().data(), request.target().size()) + " " + "HTTP/" + 
-        std::to_string(request.version() / 10) + "." + std::to_string(request.version() % 10);
-    str << ID << ": \"" << firstLine << "\" from " << getHeader("Host") << " @ " << std::ctime(&time) << std::endl; 
-    return str.str();
+    str << ID << ": \"" << request_line() << "\" from " << getHeader("Host") << " @ " << std::ctime(&time) << std::endl; 
+    log.write(str.str());
 }
 
 http::response<http::dynamic_body> HTTPRequest::send(const http::request<http::dynamic_body> & req) const {
+    Log & log = Log::getInstance();
     // Send the request to the server.
     http::write(*serverSocket, req);
+    log.write(ID + ": Requesting \"" + request_line() + "\" from " + getHeader("Host"));
     // Read the response from the server.
     http::response<http::dynamic_body> response;
     boost::beast::flat_buffer buffer;
     http::read(*serverSocket, buffer, response);
+    std::stringstream response_line; 
+    response_line << 
+        "HTTP/" << response.version() / 10 << "." << response.version() % 10 << " " <<
+        response.result_int() << " " << response.reason();
+    log.write(ID + "Received \"" + response_line.str() + "\" from " + getHeader("Host"));
     return response;
 }
 
+void HTTPRequest::set_line_for(http::request<http::dynamic_body> & req) const {
+    req.method(request.method());
+    req.target(request.target());
+    req.version(request.version());
+    req.set(http::field::host, request[http::field::host]);
+}
+
 void HTTPRequest::sendBack(http::response<http::dynamic_body> & response) {
+    Log & log = Log::getInstance();
     http::write(clientSocket, response);
+    std::stringstream response_line; 
+    response_line << 
+        "HTTP/" << response.version() / 10 << "." << response.version() % 10 << " " <<
+        response.result_int() << " " << response.reason();
+    log.write(ID + ": Responding \"" + response_line.str() + "\"");
+}
+
+bool HTTPRequest::operator<(const HTTPRequest & rhs) const {
+    return request.target() < rhs.request.target();
 }
 
 HTTPRequest::~HTTPRequest() {
