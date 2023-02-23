@@ -33,6 +33,11 @@ public:
     const std::string & getID() const { return ID; };
 
     // Get the method of this request.
+    const std::unique_ptr<boost::asio::ip::tcp::socket> & getServerSocket() const { return serverSocket; };
+
+    boost::asio::ip::tcp::socket & getClientSocket() const { return clientSocket; };
+
+    // Get the method of this request.
     std::string getMethod() const;
 
     // Get header from the request, throw an exception if not exist.

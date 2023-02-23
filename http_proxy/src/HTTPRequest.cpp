@@ -5,6 +5,7 @@
 #include "include.h"
 #include "boost/beast.hpp"
 #include "boost/asio.hpp"
+#include <boost/algorithm/string.hpp>
 
 namespace http = boost::beast::http;
 
@@ -18,14 +19,31 @@ void HTTPRequest::generateRequestID() {
 HTTPRequest::HTTPRequest(http::request<http::dynamic_body> & _request, boost::asio::ip::tcp::socket & _socket): 
         request(_request), clientSocket(_socket), serverSocket(nullptr) { 
     generateRequestID(); 
+    std::cout << printRequset() << std::endl;
     // Initialize the serversocket.
     serverSocket.reset(new boost::asio::ip::tcp::socket(io_context));
-    const std::string host = getHeader("Host");
-    std::cout << printRequset() <<std::endl;
+
+    // Parse host and port from Host header
+    const std::string host_header = getHeader("Host");
+    std::vector<std::string> host_port;
+    boost::split(host_port, host_header, boost::is_any_of(":"));
+    std::string host = host_port[0];
+    std::string port = (host_port.size() > 1) ? host_port[1] : "80"; // default to port 80 for HTTP
+
+    // Set port to 443 for HTTPS
+    if (getMethod() == "CONNECT") {
+        port = "443";
+    }
+
+    // Resolve host and port
     boost::asio::ip::tcp::resolver resolver(io_context);
-    boost::asio::connect(*serverSocket, resolver.resolve(host, "http"));
-    std::cout << "end of ctor" <<std::endl;
+    boost::asio::ip::tcp::resolver::query query(host, port);
+    boost::asio::ip::tcp::resolver::iterator endpoint_iterator = resolver.resolve(query);
+
+    // Connect to server
+    boost::asio::connect(*serverSocket, endpoint_iterator);
 }
+
 
 std::string HTTPRequest::getMethod() const {
     auto method = http::to_string(request.method());
@@ -51,10 +69,11 @@ std::string HTTPRequest::printRequset() const {
     std::chrono::system_clock::time_point tp = convertIDToTimePoint(ID);
     std::time_t time = std::chrono::system_clock::to_time_t(tp);
     std::stringstream str;
-    //const std::string host = request.base()[http::field::host].to_string();
+    boost::asio::ip::tcp::endpoint remoteEndpoint = clientSocket.remote_endpoint();
+    std::string clientIP = remoteEndpoint.address().to_string();
     const std::string firstLine = getMethod() + " " + std::string(request.target().data(), request.target().size()) + " " + "HTTP/" + 
         std::to_string(request.version() / 10) + "." + std::to_string(request.version() % 10);
-    str << ID << ": \"" << firstLine << "\" from " << getHeader("Host") << " @ " << std::ctime(&time) << std::endl; 
+    str << ID << ": \"" << firstLine << "\" from " << clientIP << " @ " << std::ctime(&time) << std::endl; 
     return str.str();
 }
 

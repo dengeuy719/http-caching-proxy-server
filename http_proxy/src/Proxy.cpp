@@ -7,6 +7,7 @@
 #include <string>
 #include "boost/asio.hpp"
 #include "boost/beast.hpp"
+#include <boost/algorithm/string.hpp>
 
 namespace http = boost::beast::http;
 
@@ -45,18 +46,19 @@ void handle_request(boost::asio::ip::tcp::socket && socket) {
 
     
     HTTPRequest req(request, socket);
-    http::response<http::dynamic_body> response = req.send();
-    
-    req.sendBack(response);
-    // if (request.method() == http::verb::get) {
-    //     handle_GET(req);
+
+    if (request.method() == http::verb::get) {
+        http::response<http::dynamic_body> response = req.send();
+        req.sendBack(response);
+        //handle_GET(req);
     // } else if (request.method() == http::verb::post) {
     //     handle_POST();
-    // } else if (request.method() == http::verb::connect) {
-    //     handle_CONNECT();
-    // } else {
-    //     throw std::runtime_error("Cannot handle the request!");
-    // }
+    } else if (request.method() == http::verb::connect) {
+        std::cout <<" **** handle connect ****" << std::endl;
+        handle_CONNECT(req);
+    } else {
+        throw std::runtime_error("Cannot handle the request!");
+    }
     // http::response<http::string_body> response;
     // response.result(http::status::ok);
     // response.set(http::field::server, "Boost.Beast");
@@ -67,6 +69,63 @@ void handle_request(boost::asio::ip::tcp::socket && socket) {
     // http::write(socket, response);
     // socket.close();
 }
+
+void handle_CONNECT(HTTPRequest & req) {
+    int server_sockfd = (*req.getServerSocket()).native_handle();  
+    // Send a success response to the client
+    const char* response = "HTTP/1.1 200 OK\r\n\r\n";
+    int client_sockfd = req.getClientSocket().native_handle();
+    if (send(client_sockfd, response, strlen(response), 0) < 0) {
+        perror("ERROR sending response to client");
+        return;
+    }
+    std::stringstream str1;
+    str1 << req.getID() << ": Responding \"" << "HTTP/1.1 200 OK" << "\""<< std::endl;
+    std::cout << str1.str() << std::endl;
+
+    // Start relaying data between client and server
+    fd_set readfds;
+    while (true) {
+        FD_ZERO(&readfds);
+        FD_SET(client_sockfd, &readfds);
+        FD_SET(server_sockfd, &readfds);
+        std::vector<char> buffer(4096);
+        int max_fd = std::max(client_sockfd, server_sockfd) + 1;
+        if (select(max_fd, &readfds, NULL, NULL, NULL) < 0) {
+            perror("ERROR in select");
+            return;
+        }
+        if (FD_ISSET(client_sockfd, &readfds)) {
+            int n = recv(client_sockfd, &buffer.data()[0], sizeof(buffer), 0);
+            if (n <= 0) {
+                // Error or client closed the connection
+                break;
+            }
+            if (send(server_sockfd, buffer.data(), n, 0) < 0) {
+                perror("ERROR sending data to server");
+                break;
+            }
+        }
+        else if (FD_ISSET(server_sockfd, &readfds)) {
+            int n = recv(server_sockfd, &buffer.data()[0], sizeof(buffer), 0);
+            if (n <= 0) {
+                // Error or server closed the connection
+                break;
+            }
+            if (send(client_sockfd, buffer.data(), n, 0) < 0) {
+                perror("ERROR sending data to client");
+                break;
+            }
+        }
+        buffer.clear();
+    }
+    close(server_sockfd);
+    close(client_sockfd);
+    std::stringstream str;
+    str << req.getID() << ": Tunnel closed"<< std::endl;
+    std::cout << str.str() << std::endl;
+}
+
 
 int main(int argc, char ** argv) {
     if (argc != 2) {

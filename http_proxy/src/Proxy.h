@@ -12,5 +12,6 @@ void proxy_run(int port);
 void handle_request(boost::asio::ip::tcp::socket && socket);
 
 void handle_GET(HTTPRequest & request);
+void handle_CONNECT(HTTPRequest & request);
 
 #endif
