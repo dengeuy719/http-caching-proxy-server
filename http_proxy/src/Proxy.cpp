@@ -1,7 +1,8 @@
 #include "Proxy.h"
 #include "HTTPRequest.h"
 #include "Cache.h"
-#include "Validator.h"
+#include "HTTPResponse.h"
+#include "Log.h"
 #include <iostream>
 #include <exception>
 #include <string>
@@ -11,22 +12,23 @@
 
 namespace http = boost::beast::http;
 
-// void handle_GET(HTTPRequest & request) {
-//     Cache & cache = Cache::getInstance();
-//     std::string log_content(request.getID() + ": ");
-//     http::response<http::dynamic_body> response;
-//     bool inCache = true;
-//     try {
-//         response = cache.inquire(request);
-//     } catch (std::out_of_range & e) {
-//         log_content.append("not in cache");
-//         inCache = false;
-//     }
-//     if (inCache) {
-//         Validator va(response);
-        
-//     }
-// }
+void handle_GET(HTTPRequest & request) {
+    Cache & cache = Cache::getInstance();
+    Log & log = Log::getInstance();
+    std::string log_content(request.getID() + ": ");
+    bool inCache = true;
+    try {
+        auto response = cache.inquire(request);
+        request.sendBack(response.get_response());
+    } catch (std::out_of_range & e) {
+        log.write(log_content + "not in cache");
+        HTTPResponse response(request.send());
+        if (response.is_cacheable()) {
+            cache.insert(request, response);
+        }
+        log.write(log_content + response.init_status());
+    }
+}
 
 void proxy_run(int port) {
     boost::asio::io_context io_context;

@@ -80,6 +80,14 @@
         "set": "cpp",
         "typeindex": "cpp",
         "strstream": "cpp",
-        "filesystem": "cpp"
+        "filesystem": "cpp",
+        "*.tcc": "cpp",
+        "utility": "cpp",
+        "bit": "cpp",
+        "functional": "cpp",
+        "iterator": "cpp",
+        "memory_resource": "cpp",
+        "thread": "cpp",
+        "cinttypes": "cpp"
     }
 }

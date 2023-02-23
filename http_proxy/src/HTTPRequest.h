@@ -27,7 +27,15 @@ private:
 
 public:
 
-    HTTPRequest(http::request<http::dynamic_body> & _request, boost::asio::ip::tcp::socket & _socket);
+    HTTPRequest(http::request<http::dynamic_body> &, boost::asio::ip::tcp::socket &);
+
+    HTTPRequest(const HTTPRequest &) = default;
+
+    HTTPRequest & operator=(const HTTPRequest &) = default;
+
+    HTTPRequest(HTTPRequest &&) = default;
+
+    HTTPRequest & operator=(HTTPRequest &&) = default;
     
     // Get the ID of this request.
     const std::string & getID() const { return ID; };
@@ -41,21 +49,25 @@ public:
     std::string getMethod() const;
 
     // Get header from the request, throw an exception if not exist.
-    std::string getHeader(const std::string & headerName) const;
+    std::string getHeader(const std::string &) const;
+
+    std::string HTTPRequest::request_line() const;
 
     // Get a string representation of this request as a record.
-    std::string  printRequset() const;
+    void printRequset() const;
 
     // Send the request to its target server and wait for response.
     http::response<http::dynamic_body> send() const { return send(request); };
 
     // Send another request to its target server and wait for response.
-    http::response<http::dynamic_body> send(const http::request<http::dynamic_body> & req) const;
+    http::response<http::dynamic_body> send(const http::request<http::dynamic_body> &) const;
 
-    void sendBack(http::response<http::dynamic_body> & response);
+    void set_line_for(http::request<http::dynamic_body> &) const;
+
+    void sendBack(http::response<http::dynamic_body> &);
     
     // Check by url in http request
-    bool operator==(const HTTPRequest & rhs) const { return request.target() == rhs.request.target(); };
+    bool operator<(const HTTPRequest &) const;
 
     ~HTTPRequest();
     
