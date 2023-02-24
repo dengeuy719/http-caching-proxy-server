@@ -3,6 +3,7 @@
 
 #include <string>
 #include "boost/beast.hpp"
+#include "HTTPRequest.h"
 
 namespace http = boost::beast::http;
 

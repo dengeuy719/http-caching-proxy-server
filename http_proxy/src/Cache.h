@@ -25,9 +25,11 @@ public:
 
     static Cache & getInstance();
 
-    const HTTPResponse & inquire(const HTTPRequest &) const;
+    HTTPResponse inquire(const HTTPRequest &) const;
 
     void insert(const HTTPRequest &, const HTTPResponse &);
+
+    void print_cache() const;
 
 };
 

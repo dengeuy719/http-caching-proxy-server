@@ -6,4 +6,6 @@
 
 std::time_t parseTime(const std::string &&, const std::string &&);
 
+std::string printTime(std::time_t time);
+
 #endif

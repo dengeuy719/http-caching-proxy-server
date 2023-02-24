@@ -102,7 +102,7 @@ std::string HTTPResponse::status() const {
         auto now = std::chrono::system_clock::now();
         auto now_t = std::chrono::system_clock::to_time_t(now);
         if (now_t >= expire_time) {
-            str.append(std::ctime(&expire_time));
+            str.append(printTime(expire_time));
             return str;
         }
     } else {
@@ -121,5 +121,5 @@ std::string HTTPResponse::init_status() const {
     if (!expires) {
         throw std::runtime_error("This response will neither expire nor require re-validation!");
     }
-    return "cached, expires at " + std::string(std::ctime(&expire_time));
+    return "cached, expires at " + printTime(expire_time);
 }

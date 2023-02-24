@@ -9,9 +9,9 @@
 
 void proxy_run(int);
 
-void handle_request(boost::asio::ip::tcp::socket &&);
+void handle_request(boost::asio::ip::tcp::socket &);
 
-void handle_GET(HTTPRequest & request);
-void handle_CONNECT(HTTPRequest & request);
+void handle_GET(HTTPRequest &);
+void handle_CONNECT(HTTPRequest &);
 
 #endif

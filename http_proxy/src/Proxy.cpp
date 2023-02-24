@@ -16,7 +16,6 @@ void handle_GET(HTTPRequest & request) {
     Cache & cache = Cache::getInstance();
     Log & log = Log::getInstance();
     std::string log_content(request.getID() + ": ");
-    bool inCache = true;
     try {
         auto response = cache.inquire(request);
         request.sendBack(response.get_response());
@@ -27,6 +26,7 @@ void handle_GET(HTTPRequest & request) {
             cache.insert(request, response);
         }
         log.write(log_content + response.init_status());
+        request.sendBack(response.get_response());
     }
 }
 
@@ -37,11 +37,11 @@ void proxy_run(int port) {
     while (true) {
         boost::asio::ip::tcp::socket socket(io_context);
         acceptor.accept(socket);
-        handle_request(std::move(socket));
+        handle_request(socket);
     }
 }
 
-void handle_request(boost::asio::ip::tcp::socket && socket) {
+void handle_request(boost::asio::ip::tcp::socket & socket) {
     http::request<http::dynamic_body> request;
     boost::beast::flat_buffer buffer;
     http::read(socket, buffer, request);
@@ -50,14 +50,13 @@ void handle_request(boost::asio::ip::tcp::socket && socket) {
     HTTPRequest req(request, socket);
 
     if (request.method() == http::verb::get) {
+        handle_GET(req);
+    } else if (request.method() == http::verb::post) {
         http::response<http::dynamic_body> response = req.send();
         req.sendBack(response);
-        //handle_GET(req);
-    // } else if (request.method() == http::verb::post) {
-    //     handle_POST();
-    } else if (request.method() == http::verb::connect) {
-        std::cout <<" **** handle connect ****" << std::endl;
-        handle_CONNECT(req);
+    // } else if (request.method() == http::verb::connect) {
+    //     std::cout <<" **** handle connect ****" << std::endl;
+    //     handle_CONNECT(req);
     } else {
         throw std::runtime_error("Cannot handle the request!");
     }
@@ -74,6 +73,7 @@ void handle_request(boost::asio::ip::tcp::socket && socket) {
 
 void handle_CONNECT(HTTPRequest & req) {
     int server_sockfd = (*req.getServerSocket()).native_handle();  
+    
     // Send a success response to the client
     const char* response = "HTTP/1.1 200 OK\r\n\r\n";
     int client_sockfd = req.getClientSocket().native_handle();

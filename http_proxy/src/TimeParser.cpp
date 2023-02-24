@@ -16,10 +16,8 @@ std::time_t parseTime(const std::string && timeStr, const std::string && pattern
     return time;
 }
 
-// int main() {
-//     std::string time("Sun, 06 Nov 1994 08:49:37 GMT");
-//     std::string time2("Sun, 06 Nov 1994 13:49:37 GMT");
-//     std::string pattern("%a, %d %b %Y %H:%M:%S GMT");
-//     std::cout << parseTime(time2, pattern) - parseTime(time, pattern) << std::endl;
-//     return 0;
-// }
+std::string printTime(std::time_t time) {
+    std::stringstream str;
+    str << std::put_time(std::gmtime(&time), "%c %Z");
+    return str.str();
+}

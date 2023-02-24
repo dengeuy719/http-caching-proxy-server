@@ -7,6 +7,7 @@
 #include "boost/asio.hpp"
 #include <boost/algorithm/string.hpp>
 #include "Log.h"
+#include "TimeParser.h"
 
 namespace http = boost::beast::http;
 
@@ -45,6 +46,8 @@ HTTPRequest::HTTPRequest(http::request<http::dynamic_body> & _request, boost::as
     boost::asio::connect(*serverSocket, endpoint_iterator);
 }
 
+HTTPRequest::HTTPRequest(const HTTPRequest & rhs): request(rhs.request), clientSocket(rhs.clientSocket), serverSocket(rhs.serverSocket), ID(rhs.ID) {}
+
 
 std::string HTTPRequest::getMethod() const {
     auto method = http::to_string(request.method());
@@ -78,7 +81,7 @@ void HTTPRequest::printRequset() const {
     std::chrono::system_clock::time_point tp = convertIDToTimePoint(ID);
     std::time_t time = std::chrono::system_clock::to_time_t(tp);
     std::stringstream str;
-    str << ID << ": \"" << request_line() << "\" from " << getHeader("Host") << " @ " << std::ctime(&time) << std::endl; 
+    str << ID << ": \"" << request_line() << "\" from " << clientSocket.remote_endpoint().address().to_string() << " @ " << printTime(time); 
     log.write(str.str());
 }
 
@@ -95,7 +98,7 @@ http::response<http::dynamic_body> HTTPRequest::send(const http::request<http::d
     response_line << 
         "HTTP/" << response.version() / 10 << "." << response.version() % 10 << " " <<
         response.result_int() << " " << response.reason();
-    log.write(ID + "Received \"" + response_line.str() + "\" from " + getHeader("Host"));
+    log.write(ID + ": Received \"" + response_line.str() + "\" from " + getHeader("Host"));
     return response;
 }
 

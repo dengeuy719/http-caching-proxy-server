@@ -10,16 +10,19 @@
 namespace http = boost::beast::http;
 
 class HTTPRequest {
+public:
+    http::request<http::dynamic_body> request;
+
 private:
     
     // Request from client.
-    http::request<http::dynamic_body> & request;
+    
     // Client socket that request from.
     boost::asio::ip::tcp::socket & clientSocket;
-    // Server socket to send request.
-    std::unique_ptr<boost::asio::ip::tcp::socket> serverSocket;
     // io_context.
     boost::asio::io_context io_context;
+    // Server socket to send request.
+    std::shared_ptr<boost::asio::ip::tcp::socket> serverSocket;
     // Request ID, unique for every incoming request.
     std::string ID;
     // Assign each request an ID.
@@ -29,19 +32,19 @@ public:
 
     HTTPRequest(http::request<http::dynamic_body> &, boost::asio::ip::tcp::socket &);
 
-    HTTPRequest(const HTTPRequest &) = default;
+    HTTPRequest(const HTTPRequest &);
 
-    HTTPRequest & operator=(const HTTPRequest &) = default;
+    // HTTPRequest & operator=(const HTTPRequest &) = default;
 
-    HTTPRequest(HTTPRequest &&) = default;
+    // HTTPRequest(HTTPRequest &&) = default;
 
-    HTTPRequest & operator=(HTTPRequest &&) = default;
+    // HTTPRequest & operator=(HTTPRequest &&) = default;
     
     // Get the ID of this request.
     const std::string & getID() const { return ID; };
 
     // Get the method of this request.
-    const std::unique_ptr<boost::asio::ip::tcp::socket> & getServerSocket() const { return serverSocket; };
+    const std::shared_ptr<boost::asio::ip::tcp::socket> & getServerSocket() const { return serverSocket; };
 
     boost::asio::ip::tcp::socket & getClientSocket() const { return clientSocket; };
 
@@ -51,7 +54,7 @@ public:
     // Get header from the request, throw an exception if not exist.
     std::string getHeader(const std::string &) const;
 
-    std::string HTTPRequest::request_line() const;
+    std::string request_line() const;
 
     // Get a string representation of this request as a record.
     void printRequset() const;
