@@ -9,14 +9,19 @@
 
 namespace http = boost::beast::http;
 
+// Assign each request an ID.
+std::string generateRequestID();
+
+static std::mutex _mutex;
+
 class HTTPRequest {
 public:
-    http::request<http::dynamic_body> request;
-
+    
+    
 private:
     
     // Request from client.
-    
+    http::request<http::dynamic_body> request;
     // Client socket that request from.
     boost::asio::ip::tcp::socket & clientSocket;
     // io_context.
@@ -25,8 +30,6 @@ private:
     std::shared_ptr<boost::asio::ip::tcp::socket> serverSocket;
     // Request ID, unique for every incoming request.
     std::string ID;
-    // Assign each request an ID.
-    void generateRequestID();
 
 public:
 
@@ -65,8 +68,10 @@ public:
     // Send another request to its target server and wait for response.
     http::response<http::dynamic_body> send(const http::request<http::dynamic_body> &) const;
 
+    // Copy the request line of this request to another request.
     void set_line_for(http::request<http::dynamic_body> &) const;
 
+    // Send back response to the client.
     void sendBack(http::response<http::dynamic_body> &);
     
     // Check by url in http request

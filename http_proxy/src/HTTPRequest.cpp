@@ -11,16 +11,24 @@
 
 namespace http = boost::beast::http;
 
-void HTTPRequest::generateRequestID() {
-    auto now = std::chrono::system_clock::now();
-    auto timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(
-        now.time_since_epoch());
-    ID = std::to_string(timestamp.count());
+std::string generateRequestID() {
+    std::unique_lock<std::mutex> lock(_mutex);
+    static int id = 0;
+    std::stringstream str;
+    str << "0000" << id;
+    std::string ID = str.str();
+    ID = ID.substr(ID.size() - 5);
+    id++;
+    if (id == 100000) {
+        id = 0;
+        Log::getInstance().write("(no-id): NOTE request ids are exhausted, next request id will be 00000");
+    }
+    return ID;
 }
 
 HTTPRequest::HTTPRequest(http::request<http::dynamic_body> & _request, boost::asio::ip::tcp::socket & _socket): 
         request(_request), clientSocket(_socket), serverSocket(nullptr) { 
-    generateRequestID(); 
+    ID = generateRequestID(); 
     printRequset();
     // Initialize the serversocket.
     serverSocket.reset(new boost::asio::ip::tcp::socket(io_context));
@@ -63,12 +71,6 @@ std::string HTTPRequest::getHeader(const std::string & headerName) const {
     }
 }
 
-std::chrono::system_clock::time_point convertIDToTimePoint(const std::string& id) {
-    long long timestamp = std::stoll(id);
-    std::chrono::milliseconds ms(timestamp);
-    return std::chrono::system_clock::time_point(ms);
-}
-
 std::string HTTPRequest::request_line() const {
     //const std::string host = request.base()[http::field::host].to_string();
     std::string firstLine = getMethod() + " " + std::string(request.target().data(), request.target().size()) + " " + "HTTP/" + 
@@ -78,10 +80,10 @@ std::string HTTPRequest::request_line() const {
 
 void HTTPRequest::printRequset() const {
     Log & log = Log::getInstance();
-    std::chrono::system_clock::time_point tp = convertIDToTimePoint(ID);
-    std::time_t time = std::chrono::system_clock::to_time_t(tp);
+    auto now = std::chrono::system_clock::now();
+    auto now_t = std::chrono::system_clock::to_time_t(now);
     std::stringstream str;
-    str << ID << ": \"" << request_line() << "\" from " << clientSocket.remote_endpoint().address().to_string() << " @ " << printTime(time); 
+    str << ID << ": \"" << request_line() << "\" from " << clientSocket.remote_endpoint().address().to_string() << " @ " << printTime(now_t); 
     log.write(str.str());
 }
 
