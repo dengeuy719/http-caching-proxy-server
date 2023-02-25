@@ -127,3 +127,13 @@ bool HTTPRequest::operator<(const HTTPRequest & rhs) const {
 
 HTTPRequest::~HTTPRequest() {
 }
+
+bool check_valid(http::request<http::dynamic_body> & req) {
+    if (req.method() != http::verb::get && req.method() != http::verb::connect && req.method() != http::verb::post) {
+        return false;
+    }
+    if (req.count(http::field::host) == 0) {
+        return false;
+    }
+    return true;
+}

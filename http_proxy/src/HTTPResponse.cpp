@@ -2,6 +2,7 @@
 #include "HTTPRequest.h"
 #include "boost/beast.hpp"
 #include "TimeParser.h"
+#include "MyException.hpp"
 #include <string>
 #include <iostream>
 
@@ -19,9 +20,9 @@ void HTTPResponse::cacheability() {
             uncacheable_reason = "Cache-Control: no-store";
             return;
         }
-        if (cache_control.find("max-age=0") != std::string::npos ||
-            cache_control.find("no-cache") != std::string::npos ||
-            cache_control.find("must-revalidate") != std::string::npos) {
+        if (cache_control.find("no-cache") != std::string::npos ||
+            cache_control.find("must-revalidate") != std::string::npos ||
+            cache_control.find("proxy-revalidate") != std::string::npos) {
             require_validation = true;
         }
         if (cache_control.find("max-age=") != std::string::npos &&
@@ -63,14 +64,14 @@ void HTTPResponse::set_expire_time() {
             std::time_t max_age = std::stol(cache_control.substr(cache_control.find("max-age=") + 8));
             it = response.base().find(http::field::date);
             if (it == response.base().end()) {
-                throw std::runtime_error("Response has no Date field!");
+                throw response_error("Response has no Date field!");
             }
             auto date = parseTime(it->value().to_string(), "%a, %d %b %Y %H:%M:%S %Z");
             expire_time = date + max_age;
         }
     } else {
         if (response.count(http::field::expires) == 0) {
-            throw std::runtime_error("No expires field in the reponse!");
+            throw response_error("No expires field in the reponse!");
         }
         expire_time = parseTime(it->value().to_string(), "%a, %d %b %Y %H:%M:%S %Z");
     }
@@ -78,7 +79,7 @@ void HTTPResponse::set_expire_time() {
 
 http::request<http::dynamic_body> HTTPResponse::make_validation(const HTTPRequest & req) const {
     if (!can_validate) {
-        throw std::runtime_error("Can't validate cached response");
+        throw response_error("Can't validate cached response");
     }
     http::request<http::dynamic_body> request;
     req.set_line_for(request);
@@ -88,7 +89,7 @@ http::request<http::dynamic_body> HTTPResponse::make_validation(const HTTPReques
     } else if (response.count(http::field::last_modified)) {
         request.set(http::field::if_modified_since, response[http::field::last_modified]);
     } else {
-        throw std::runtime_error("Can't validate cached response");
+        throw response_error("Can't validate cached response");
     }
     return request;
 }
@@ -106,7 +107,7 @@ std::string HTTPResponse::status() const {
             return str;
         }
     } else {
-        throw std::runtime_error("This response will neither expire nor require re-validation!");
+        throw response_error("This response will neither expire nor require re-validation!");
     }
     return "valid";
 }
@@ -119,7 +120,7 @@ std::string HTTPResponse::init_status() const {
         return "cached, but requires re-validation";
     }
     if (!expires) {
-        throw std::runtime_error("This response will neither expire nor require re-validation!");
+        throw response_error("This response will neither expire nor require re-validation!");
     }
     return "cached, expires at " + printTime(expire_time);
 }
