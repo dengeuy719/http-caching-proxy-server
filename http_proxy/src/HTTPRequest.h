@@ -79,4 +79,7 @@ public:
 
 };
 
+// Check if the request is valid
+bool check_valid(http::request<http::dynamic_body> & req);
+
 #endif

@@ -17,7 +17,8 @@ std::time_t parseTime(const std::string && timeStr, const std::string && pattern
 }
 
 std::string printTime(std::time_t time) {
-    std::stringstream str;
-    str << std::put_time(std::gmtime(&time), "%c %Z");
-    return str.str();
+    struct tm *timeinfo;
+    timeinfo = localtime(&time);
+    std::string time_str(asctime(timeinfo));
+    return time_str.substr(0, time_str.length() - 1);
 }
