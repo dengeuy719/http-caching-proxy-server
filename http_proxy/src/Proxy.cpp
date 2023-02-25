@@ -3,6 +3,7 @@
 #include "Cache.h"
 #include "HTTPResponse.h"
 #include "Log.h"
+#include "MyException.hpp"
 #include <iostream>
 #include <exception>
 #include <string>
@@ -36,8 +37,12 @@ void proxy_run(int port) {
     //int i = 1;
     while (true) {
         boost::asio::ip::tcp::socket socket(io_context);
-        acceptor.accept(socket);
-        handle_request(socket);
+        try {
+            acceptor.accept(socket);
+            handle_request(socket);
+        } catch(std::exception & e) {
+            Log::getInstance().write(e.what());
+        }
     }
 }
 
@@ -45,8 +50,6 @@ void handle_request(boost::asio::ip::tcp::socket & socket) {
     http::request<http::dynamic_body> request;
     boost::beast::flat_buffer buffer;
     http::read(socket, buffer, request);
-
-    
     HTTPRequest req(request, socket);
 
     if (request.method() == http::verb::get) {

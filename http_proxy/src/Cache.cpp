@@ -39,10 +39,3 @@ void Cache::insert(const HTTPRequest & req, const HTTPResponse & res) {
     std::unique_lock<std::mutex> lock(_mutex);
     cache->emplace(std::make_pair(req, res));
 }
-
-void Cache::print_cache() const {
-    auto it = cache->begin();
-    for (; it != cache->end(); ++it) {
-        std::cout << it->first.request.target() << std::endl;
-    }
-}
