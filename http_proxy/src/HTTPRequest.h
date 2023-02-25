@@ -12,7 +12,7 @@ namespace http = boost::beast::http;
 class HTTPRequest {
 public:
     http::request<http::dynamic_body> request;
-
+    boost::asio::io_context io_context;
 private:
     
     // Request from client.
@@ -20,7 +20,7 @@ private:
     // Client socket that request from.
     boost::asio::ip::tcp::socket & clientSocket;
     // io_context.
-    boost::asio::io_context io_context;
+    
     // Server socket to send request.
     std::shared_ptr<boost::asio::ip::tcp::socket> serverSocket;
     // Request ID, unique for every incoming request.
@@ -64,6 +64,8 @@ public:
 
     // Send another request to its target server and wait for response.
     http::response<http::dynamic_body> send(const http::request<http::dynamic_body> &) const;
+    
+    http::response<http::dynamic_body> sendConnect(const boost::asio::ip::tcp::socket &) const;
 
     void set_line_for(http::request<http::dynamic_body> &) const;
 
