@@ -14,10 +14,7 @@ std::string generateRequestID();
 
 static std::mutex _mutex;
 
-class HTTPRequest {
-public:
-    
-    
+class HTTPRequest { 
 private:
     
     // Request from client.
