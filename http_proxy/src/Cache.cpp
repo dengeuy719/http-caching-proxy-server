@@ -14,7 +14,7 @@ Cache & Cache::getInstance() {
     return c;
 }
 
-HTTPResponse Cache::inquire(const HTTPRequest & req) const {
+const HTTPResponse & Cache::inquire(const HTTPRequest & req) const {
     std::unique_lock<std::mutex> lock(_mutex);
     auto it = map->at(req);
     list->splice(list->begin(), *list, it);
@@ -22,16 +22,19 @@ HTTPResponse Cache::inquire(const HTTPRequest & req) const {
     Log & log = Log::getInstance();
     auto status = response.status();
     std::string log_content(req.getID() + ": in cache, ");
-    if (status.at(0) == 'V') {
-        log.write(log_content + status.substr(1));
+    if (status.at(status.length() - 1) == 'V') {
+        log.write(log_content + status.substr(0, status.length() - 1));
         HTTPResponse new_response(req.send(response.make_validation(req)));
+        if (new_response.get_response().result_int() == 304) {
+            return it->second;
+        }
         it->second = new_response;
-        return new_response;
-    } else if (status.at(0) == 'E') {
-        log.write(log_content + status.substr(1));
+        return it->second;
+    } else if (status.at(status.length() - 1) == 'E') {
+        log.write(log_content + status.substr(0, status.length() - 1));
         HTTPResponse new_response(req.send());
         it->second = new_response;
-        return new_response;
+        return it->second;
     } else {
         log.write(log_content + status);
         return response;

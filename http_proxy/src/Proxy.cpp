@@ -59,15 +59,15 @@ void handle_request(boost::asio::ip::tcp::socket & socket) {
     }
     HTTPRequest req(request, socket);
     try {
-        if (request.method() == http::verb::get) {
+        //if (request.method() == http::verb::get) {
             handle_GET(req);
         // } else if (request.method() == http::verb::post) {
         //     http::response<http::dynamic_body> response = req.send();
         //     req.sendBack(response);
-        } else if (request.method() == http::verb::connect) {
-            std::cout <<" **** handle connect ****" << std::endl;
-            handle_CONNECT(req);
-        }
+        // } else if (request.method() == http::verb::connect) {
+        //     std::cout <<" **** handle connect ****" << std::endl;
+        //     handle_CONNECT(req);
+        // }
     } catch (response_error & e) {
         http::response<http::dynamic_body> response;
         response.result(http::status::bad_gateway);

@@ -19,6 +19,8 @@ private:
     bool can_validate;
     // The response has a expiring time.
     bool expires;
+    // Allow to use a stale response in cache if cannot connect to server.
+    bool immediate_validation;
     // The expire time.
     std::time_t expire_time;
     // The reason that cannot be cached.
@@ -31,10 +33,10 @@ private:
 public:
 
     HTTPResponse(http::response<http::dynamic_body> & _res): 
-        response(_res), cacheable(false), require_validation(false), can_validate(false), expires(false) { cacheability(); }
+        response(_res), cacheable(false), require_validation(false), can_validate(false), expires(false), immediate_validation(false) { cacheability(); }
 
     HTTPResponse(http::response<http::dynamic_body> && _res): 
-        response(_res), cacheable(false), require_validation(false), can_validate(false), expires(false) { cacheability(); }
+        response(_res), cacheable(false), require_validation(false), can_validate(false), expires(false), immediate_validation(false) { cacheability(); }
 
     HTTPResponse(const HTTPResponse &) = default;
 
