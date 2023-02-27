@@ -10,9 +10,6 @@ namespace http = boost::beast::http;
 
 void HTTPResponse::cacheability() {
     // To check if the response can be validated.
-    auto etag = response[boost::beast::http::field::etag];
-    std::cout << "etag: "<< etag <<std::endl;
-
     if (response.count(http::field::etag)) {
         can_validate = true;
     }

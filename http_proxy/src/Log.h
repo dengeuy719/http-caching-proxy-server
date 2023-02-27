@@ -1,9 +1,11 @@
 #ifndef _LOG_H_
 #define _LOG_H_
 
-#include "include.h"
+#include <iostream>
+#include <fstream>
 #include <string>
 #include <mutex>
+#include <string_view>
 
 #define LOG_PATH "/var/log/erss/proxy.log"
 

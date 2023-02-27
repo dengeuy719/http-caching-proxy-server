@@ -64,7 +64,6 @@ void * handle_request(void * ptr) {
             http::response<http::dynamic_body> response = req.send();
             req.sendBack(response);
         } else if (request.method() == http::verb::connect) {
-            std::cout << "begin to handle connect\n";
             handle_CONNECT(req);
         }
     } catch (response_error & e) {
@@ -95,15 +94,17 @@ void handle_GET(HTTPRequest & request) {
     }
 }
 
-void handle_CONNECT(HTTPRequest & req) {
-    int server_fd = req.getServerSocket().native_handle();
-    int client_fd = req.getClientSocket().native_handle();
+void handle_CONNECT(HTTPRequest & request) {
+    int server_fd = request.getServerSocket().native_handle();
+    int client_fd = request.getClientSocket().native_handle();
+    Log & log = Log::getInstance();
+    std::string log_content(request.getID() + ": ");
     fd_set read_fdset;
     int max_fd = std::max(server_fd, client_fd);
     http::response<http::dynamic_body> response;
     response.result(http::status::ok);
     response.prepare_payload();
-    req.sendBack(response);
+    request.sendBack(response);
     while (true) {
         FD_ZERO(&read_fdset);
         FD_SET(server_fd, &read_fdset);
@@ -129,6 +130,7 @@ void handle_CONNECT(HTTPRequest & req) {
             }
         }
     }
+    log.write(log_content + "Tunnel closed");
 }
 
 int main(int argc, char ** argv) {
