@@ -33,8 +33,6 @@ public:
 
     void insert(const HTTPRequest &, const HTTPResponse &);
 
-    void print_cache() const;
-
 };
 
 #endif

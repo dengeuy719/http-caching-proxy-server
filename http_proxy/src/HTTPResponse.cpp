@@ -34,7 +34,7 @@ void HTTPResponse::cacheability() {
         }
         if (cache_control.find("must-revalidate") != std::string::npos ||
             cache_control.find("proxy-revalidate") != std::string::npos) {
-            require_validation = false;
+            require_validation = true;
         }
         if ((cache_control.find("max-age=") != std::string::npos &&
             cache_control.find("max-age=0") == std::string::npos) ||
@@ -81,6 +81,7 @@ void HTTPResponse::set_expire_time() {
         auto date = parseTime(it->value().to_string(), "%a, %d %b %Y %H:%M:%S %Z");
         expire_time = date + max_age;
     } else {
+        it = response.base().find(http::field::expires);
         if (response.count(http::field::expires) == 0) {
             throw response_error("No expires field in the reponse!");
         }

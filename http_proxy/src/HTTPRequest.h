@@ -22,7 +22,7 @@ private:
     // Client socket that request from.
     boost::asio::ip::tcp::socket & clientSocket;
     // io_context.
-    boost::asio::io_context io_context;
+    boost::asio::io_context & io_context;
     // Server socket to send request.
     std::shared_ptr<boost::asio::ip::tcp::socket> serverSocket;
     // Request ID, unique for every incoming request.
@@ -30,7 +30,7 @@ private:
 
 public:
 
-    HTTPRequest(http::request<http::dynamic_body> &, boost::asio::ip::tcp::socket &);
+    HTTPRequest(http::request<http::dynamic_body>, boost::asio::ip::tcp::socket &, boost::asio::io_context &);
 
     HTTPRequest(const HTTPRequest &);
 
@@ -41,12 +41,12 @@ public:
     // HTTPRequest & operator=(HTTPRequest &&) = default;
     
     // Get the ID of this request.
-    const std::string & getID() const { return ID; };
+    const std::string & getID() const { return ID; }
 
     // Get the method of this request.
-    const std::shared_ptr<boost::asio::ip::tcp::socket> & getServerSocket() const { return serverSocket; };
+    boost::asio::ip::tcp::socket & getServerSocket() const { return *serverSocket; }
 
-    boost::asio::ip::tcp::socket & getClientSocket() const { return clientSocket; };
+    boost::asio::ip::tcp::socket & getClientSocket() const { return clientSocket; }
 
     // Get the method of this request.
     std::string getMethod() const;

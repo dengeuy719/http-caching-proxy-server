@@ -26,35 +26,29 @@ std::string generateRequestID() {
     return ID;
 }
 
-HTTPRequest::HTTPRequest(http::request<http::dynamic_body> & _request, boost::asio::ip::tcp::socket & _socket): 
-        request(_request), clientSocket(_socket), serverSocket(nullptr) { 
+HTTPRequest::HTTPRequest(http::request<http::dynamic_body> _request, boost::asio::ip::tcp::socket & _socket, boost::asio::io_context & _context): 
+        request(_request), clientSocket(_socket), io_context(_context), serverSocket(nullptr) { 
     ID = generateRequestID(); 
-    printRequset();
     // Initialize the serversocket.
     serverSocket.reset(new boost::asio::ip::tcp::socket(io_context));
-
     // Parse host and port from Host header
-    const std::string host_header = getHeader("Host");
+    std::string host_header = getHeader("Host");
+    if (request.method() == http::verb::connect) {
+        host_header = std::string(request.target().data(), request.target().size());
+    }
     std::vector<std::string> host_port;
     boost::split(host_port, host_header, boost::is_any_of(":"));
     std::string host = host_port[0];
     std::string port = (host_port.size() > 1) ? host_port[1] : "80"; // default to port 80 for HTTP
-
-    // Set port to 443 for HTTPS
-    if (getMethod() == "CONNECT") {
-        port = "443";
-    }
-
     // Resolve host and port
     boost::asio::ip::tcp::resolver resolver(io_context);
-    boost::asio::ip::tcp::resolver::query query(host, port);
-    boost::asio::ip::tcp::resolver::iterator endpoint_iterator = resolver.resolve(query);
-
-    // Connect to server
-    boost::asio::connect(*serverSocket, endpoint_iterator);
+    boost::asio::ip::tcp::resolver::results_type endpoints = resolver.resolve(host, port);
+    boost::asio::connect(*serverSocket, endpoints);
+    printRequset();
 }
 
-HTTPRequest::HTTPRequest(const HTTPRequest & rhs): request(rhs.request), clientSocket(rhs.clientSocket), serverSocket(rhs.serverSocket), ID(rhs.ID) {}
+HTTPRequest::HTTPRequest(const HTTPRequest & rhs): 
+    request(rhs.request), clientSocket(rhs.clientSocket), io_context(rhs.io_context), serverSocket(rhs.serverSocket), ID(rhs.ID) {}
 
 
 std::string HTTPRequest::getMethod() const {
@@ -72,7 +66,6 @@ std::string HTTPRequest::getHeader(const std::string & headerName) const {
 }
 
 std::string HTTPRequest::request_line() const {
-    //const std::string host = request.base()[http::field::host].to_string();
     std::string firstLine = getMethod() + " " + std::string(request.target().data(), request.target().size()) + " " + "HTTP/" + 
         std::to_string(request.version() / 10) + "." + std::to_string(request.version() % 10);
     return firstLine;
