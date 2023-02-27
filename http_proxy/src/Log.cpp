@@ -1,4 +1,5 @@
 #include "Log.h"
+#include <mutex>
 
 Log::Log() {
     log_file_.open(LOG_PATH, std::ios_base::app);
@@ -13,5 +14,6 @@ Log & Log::getInstance() {
 }
 
 void Log::write(std::string_view message) {
+    std::unique_lock<std::mutex> lock(mutex);
     std::cout << message << std::endl;
 }

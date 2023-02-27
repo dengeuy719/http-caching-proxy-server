@@ -7,11 +7,75 @@
 #include <iostream>
 #include <exception>
 #include <string>
+#include <pthread.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <vector>
+#include <sys/socket.h>
+#include <sys/select.h>
+#include <netdb.h>
+#include <unistd.h>
 #include "boost/asio.hpp"
 #include "boost/beast.hpp"
 #include <boost/algorithm/string.hpp>
 
 namespace http = boost::beast::http;
+
+void run(int port) {
+    boost::asio::io_context io_context;
+    boost::asio::ip::tcp::endpoint endpoint(boost::asio::ip::tcp::v4(), port);
+    boost::asio::ip::tcp::acceptor acceptor(io_context, endpoint);
+    while (true) {
+        try {
+            std::shared_ptr<boost::asio::io_context> thread_context(new boost::asio::io_context());
+            std::shared_ptr<boost::asio::ip::tcp::socket> socket(new boost::asio::ip::tcp::socket(*thread_context));
+            acceptor.accept(*socket);
+            pthread_t thread;
+            std::unique_ptr<request_args> args(new request_args(socket, thread_context));
+            pthread_create(&thread, NULL, handle_request, args.release());
+            pthread_detach(thread);
+        } catch (std::exception & e) {
+            std::cout << e.what() << std::endl;
+        }
+    }
+}
+
+void * handle_request(void * ptr) {
+    std::unique_ptr<request_args> args((request_args *)ptr);
+    boost::asio::ip::tcp::socket & socket = *(args->socket);
+    boost::asio::io_context & io_context = *(args->context);
+    http::request<http::dynamic_body> request;
+    boost::beast::flat_buffer buffer;
+    try {
+        http::read(socket, buffer, request);
+    } catch (boost::wrapexcept<boost::system::system_error> & e) {
+        http::response<http::string_body> response;
+        response.result(http::status::bad_request);
+        response.prepare_payload();
+        http::write(socket, response);
+        Log::getInstance().write("(no-id): NOTE Rejected a malformed request.");
+        pthread_exit(nullptr);
+    }
+    HTTPRequest req(request, socket, io_context);
+    try {
+        if (request.method() == http::verb::get) {
+            handle_GET(req);
+        } else if (request.method() == http::verb::post) {
+            http::response<http::dynamic_body> response = req.send();
+            req.sendBack(response);
+        } else if (request.method() == http::verb::connect) {
+            std::cout << "begin to handle connect\n";
+            handle_CONNECT(req);
+        }
+    } catch (response_error & e) {
+        http::response<http::dynamic_body> response;
+        response.result(http::status::bad_gateway);
+        response.prepare_payload();
+        req.sendBack(response);
+        Log::getInstance().write(req.getID() + ": ERROR Bad response. Reason: " + std::string(e.what()));
+    }
+    pthread_exit(nullptr);
+}
 
 void handle_GET(HTTPRequest & request) {
     Cache & cache = Cache::getInstance();
@@ -31,208 +95,40 @@ void handle_GET(HTTPRequest & request) {
     }
 }
 
-void proxy_run(int port) {
-    boost::asio::io_context io_context;
-    boost::asio::ip::tcp::acceptor acceptor(io_context, boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v4(), port));
-    while (true) {
-        boost::asio::ip::tcp::socket socket(io_context);
-        try {
-            acceptor.accept(socket);
-            handle_request(socket);
-        } catch(std::exception & e) {
-            Log::getInstance().write("(no-id): ERROR " + std::string(e.what()));
-        }
-    }
-}
-
-void handle_request(boost::asio::ip::tcp::socket & socket) {
-    http::request<http::dynamic_body> request;
-    boost::beast::flat_buffer buffer;
-    http::read(socket, buffer, request);
-    if (!check_valid(request)) {
-        http::response<http::string_body> response;
-        response.result(http::status::bad_request);
-        response.prepare_payload();
-        http::write(socket, response);
-        Log::getInstance().write("(no-id): NOTE Rejected a malformed request.");
-        return;
-    }
-    HTTPRequest req(request, socket);
-    try {
-         if (request.method() == http::verb::get) {
-             handle_GET(req);
-        // } else if (request.method() == http::verb::post) {
-        //     http::response<http::dynamic_body> response = req.send();
-        //     req.sendBack(response);
-        // } else if (request.method() == http::verb::connect) {
-        //     std::cout <<" **** handle connect ****" << std::endl;
-        //    handle_CONNECT(req);
-        }
-    } catch (response_error & e) {
-        http::response<http::dynamic_body> response;
-        response.result(http::status::bad_gateway);
-        response.prepare_payload();
-        req.sendBack(response);
-        Log::getInstance().write(req.getID() + ": ERROR Bad response. Reason: " + std::string(e.what()));
-    }
-}
-// //********  boost version connect ******
-// void handle_CONNECT(HTTPRequest& req) {
-//   // Connect to the remote server
-//   boost::asio::ip::tcp::socket& client_socket = req.getClientSocket();
-//   boost::asio::ip::tcp::socket& server_socket = *req.getServerSocket();
-
-//   // Send a success response to the client
-//   http::response<http::dynamic_body> new_response;
-//   new_response.version(11);
-//   new_response.result(http::status::ok);
-//   new_response.prepare_payload();
-//   req.sendBack(new_response);
-
-//   // Set both sockets to non-blocking mode
-//   client_socket.non_blocking(true);
-//   server_socket.non_blocking(true);
-
-//   bool client_open = true;
-//   bool server_open = true;
-//   while (client_open || server_open) {
-//     // Check if there is data available to read from either socket
-//     boost::asio::ip::tcp::socket* readable_socket = nullptr;
-//     if (client_open) {
-//       if (client_socket.available()) {
-//         readable_socket = &client_socket;
-//       }
-//     }
-//     if (server_open) {
-//       if (server_socket.available()) {
-//         readable_socket = &server_socket;
-//       }
-//     }
-
-//     if (readable_socket) {
-//       // Read data from the socket in a loop until all available data has been read
-//       std::vector<char> buffer(65536);
-//       while (true) {
-//         boost::system::error_code error;
-//         size_t bytesRead = readable_socket->read_some(boost::asio::buffer(buffer.data(), buffer.size()), error);
-//         std::cout << "bytesRead: "<< bytesRead << std::endl;
-//         if (error) {
-//           if (error == boost::asio::error::eof) {
-//             if (readable_socket == &client_socket) {
-//               client_open = false;
-//               break;
-//             } else {
-//               server_open = false;
-//               break;
-//             }
-//           } else if (error != boost::asio::error::would_block) {
-//             std::cerr << "ERROR receiving data: " << error.message() << std::endl;
-//             break;
-//           }
-//         } else {
-//           // Write the data to the other socket
-//           size_t bytesToSend = bytesRead;
-//           while (bytesToSend > 0) {
-//             size_t bytes_sent = boost::asio::write(readable_socket == &client_socket ? server_socket : client_socket, 
-//               boost::asio::buffer(buffer.data(), bytesToSend), error);
-//             if (error && error != boost::asio::error::would_block) {
-//               std::cerr << "ERROR sending data: " << error.message() << std::endl;
-//               std::this_thread::sleep_for(std::chrono::milliseconds(100));
-//               continue;
-//             }
-//             bytesToSend -= bytes_sent;
-//           }
-//           if (error && error != boost::asio::error::would_block) {
-//             std::cerr << "ERROR sending data: " << error.message() << std::endl;
-//             std::this_thread::sleep_for(std::chrono::milliseconds(100));
-//             continue;
-//           }
-//           // Check if all data has been read from the socket
-//           if (bytesRead < buffer.size()) {
-//             break;
-//           }
-//         }
-//       }
-//     }
-//   }
-//   // Close sockets
-//   boost::system::error_code error;
-//   client_socket.shutdown(boost::asio::ip::tcp::socket::shutdown_both, error);
-//   client_socket.close();
-//   server_socket.shutdown(boost::asio::ip::tcp::socket::shutdown_both, error);
-//   server_socket.close();
-//     std::stringstream str;
-//     str << req.getID() << ": Tunnel closed"<< std::endl;
-//     std::cout << str.str() << std::endl;
-// }
-
 void handle_CONNECT(HTTPRequest & req) {
-    // Connect to the remote server
-    int server_sockfd = req.getServerSocket()->native_handle();
-    int client_sockfd = req.getClientSocket().native_handle();
-    // Send a success response to the client
-    http::response<http::dynamic_body> new_response;
-    new_response.version(11);
-    new_response.result(http::status::ok);
-    new_response.prepare_payload();
-    req.sendBack(new_response);
-
-    // // Set both sockets to non-blocking mode
-    // int flags = fcntl(client_sockfd, F_GETFL, 0);
-    // fcntl(client_sockfd, F_SETFL, flags | O_NONBLOCK);
-    // flags = fcntl(server_sockfd, F_GETFL, 0);
-    // fcntl(server_sockfd, F_SETFL, flags | O_NONBLOCK);
-
-    fd_set readfds;
-    FD_ZERO(&readfds);
-    FD_SET(client_sockfd, &readfds);
-    FD_SET(server_sockfd, &readfds);
-    int max_fd = std::max(client_sockfd, server_sockfd) + 1;
-    std::vector<char> buffer(65536);
+    int server_fd = req.getServerSocket().native_handle();
+    int client_fd = req.getClientSocket().native_handle();
+    fd_set read_fdset;
+    int max_fd = std::max(server_fd, client_fd);
+    http::response<http::dynamic_body> response;
+    response.result(http::status::ok);
+    response.prepare_payload();
+    req.sendBack(response);
     while (true) {
-        fd_set temp_set = readfds;
-        if (select(max_fd, &temp_set, NULL, NULL, NULL) < 0) {
-            perror("ERROR in select");
-            break;
+        FD_ZERO(&read_fdset);
+        FD_SET(server_fd, &read_fdset);
+        FD_SET(client_fd, &read_fdset);
+        int status = select(max_fd + 1, &read_fdset, NULL, NULL, NULL);
+        if (status == -1) {
+            std::cerr << "select error!\n";
         }
-        if (FD_ISSET(client_sockfd, &temp_set)) {
-            int n = recv(client_sockfd, &buffer.data()[0], sizeof(buffer), 0);
-            //std::cout << "client: "<<n << std::endl;
-            if (n < 0) {
-                if (errno != EWOULDBLOCK) {
-                    perror("ERROR receiving data from client");
-                    break;
+        int fds[2] = {server_fd, client_fd};
+        int recv_len;
+        int sent_len;
+        for (int i = 0; i < 2; i++) {
+            char buffer[65536] = {0};
+            if (FD_ISSET(fds[i], &read_fdset)) {
+                recv_len = recv(fds[i], buffer, sizeof(buffer), MSG_NOSIGNAL);
+                if (recv_len <= 0) {
+                    return;
                 }
-            } else if (n == 0) {
-                break;
-            } else {
-                if (send(server_sockfd, &buffer.data()[0], n, 0) < 0) {
-                    perror("ERROR sending data to server");
-                    break;
-                }
-            }
-        }
-        if (FD_ISSET(server_sockfd, &temp_set)) {
-            int n = recv(server_sockfd, &buffer.data()[0], sizeof(buffer), 0);
-            //std::cout << "server: "<<n << std::endl;
-            if (n < 0) {
-                if (errno != EWOULDBLOCK) {
-                    perror("ERROR receiving data from server");
-                    break;
-                }
-            } else if (n == 0) {
-                break;
-            } else {
-                if (send(client_sockfd, &buffer.data()[0], n, 0) < 0) {
-                    perror("ERROR sending data to client");
-                    break;
+                sent_len = send(fds[1-i], buffer, recv_len, MSG_NOSIGNAL);
+                if (sent_len <= 0) {
+                    return;
                 }
             }
         }
     }
-    // Close sockets
-    close(server_sockfd);
-    close(client_sockfd);
 }
 
 int main(int argc, char ** argv) {
@@ -240,9 +136,9 @@ int main(int argc, char ** argv) {
         std::cerr << "Usage: ./proxy <port>\n";
         exit(EXIT_FAILURE);
     }
-    int port = std::strtol(argv[1], nullptr, 10);
+    int port = std::stol(argv[1]);
     try {
-        proxy_run(port);
+        run(port);
     } catch (std::exception & e) {
         std::cerr << e.what() << std::endl;
     }
