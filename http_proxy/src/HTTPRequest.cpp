@@ -82,8 +82,10 @@ void HTTPRequest::printRequset() const {
     Log & log = Log::getInstance();
     auto now = std::chrono::system_clock::now();
     auto now_t = std::chrono::system_clock::to_time_t(now);
+    std::tm* gmt_time = std::gmtime(&now_t);
+    auto now_gmt = std::mktime(gmt_time);
     std::stringstream str;
-    str << ID << ": \"" << request_line() << "\" from " << clientSocket.remote_endpoint().address().to_string() << " @ " << printTime(now_t); 
+    str << ID << ": \"" << request_line() << "\" from " << clientSocket.remote_endpoint().address().to_string() << " @ " << printTime(now_gmt); 
     log.write(str.str());
 }
 

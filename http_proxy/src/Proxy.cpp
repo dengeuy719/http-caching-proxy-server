@@ -59,15 +59,15 @@ void handle_request(boost::asio::ip::tcp::socket & socket) {
     }
     HTTPRequest req(request, socket);
     try {
-        //if (request.method() == http::verb::get) {
-            handle_GET(req);
+         if (request.method() == http::verb::get) {
+             handle_GET(req);
         // } else if (request.method() == http::verb::post) {
         //     http::response<http::dynamic_body> response = req.send();
         //     req.sendBack(response);
         // } else if (request.method() == http::verb::connect) {
         //     std::cout <<" **** handle connect ****" << std::endl;
-        //     handle_CONNECT(req);
-        // }
+        //    handle_CONNECT(req);
+        }
     } catch (response_error & e) {
         http::response<http::dynamic_body> response;
         response.result(http::status::bad_gateway);
@@ -197,7 +197,7 @@ void handle_CONNECT(HTTPRequest & req) {
         }
         if (FD_ISSET(client_sockfd, &temp_set)) {
             int n = recv(client_sockfd, &buffer.data()[0], sizeof(buffer), 0);
-            std::cout << "client: "<<n << std::endl;
+            //std::cout << "client: "<<n << std::endl;
             if (n < 0) {
                 if (errno != EWOULDBLOCK) {
                     perror("ERROR receiving data from client");
@@ -214,7 +214,7 @@ void handle_CONNECT(HTTPRequest & req) {
         }
         if (FD_ISSET(server_sockfd, &temp_set)) {
             int n = recv(server_sockfd, &buffer.data()[0], sizeof(buffer), 0);
-            std::cout << "server: "<<n << std::endl;
+            //std::cout << "server: "<<n << std::endl;
             if (n < 0) {
                 if (errno != EWOULDBLOCK) {
                     perror("ERROR receiving data from server");

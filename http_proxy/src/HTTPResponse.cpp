@@ -10,6 +10,9 @@ namespace http = boost::beast::http;
 
 void HTTPResponse::cacheability() {
     // To check if the response can be validated.
+    auto etag = response[boost::beast::http::field::etag];
+    std::cout << "etag: "<< etag <<std::endl;
+
     if (response.count(http::field::etag)) {
         can_validate = true;
     }
@@ -34,7 +37,7 @@ void HTTPResponse::cacheability() {
         }
         if (cache_control.find("must-revalidate") != std::string::npos ||
             cache_control.find("proxy-revalidate") != std::string::npos) {
-            require_validation = false;
+            require_validation = true;
         }
         if ((cache_control.find("max-age=") != std::string::npos &&
             cache_control.find("max-age=0") == std::string::npos) ||
@@ -51,7 +54,7 @@ void HTTPResponse::cacheability() {
     }
     
     if ((require_validation || immediate_validation) && !can_validate) {
-        uncacheable_reason = "Requires validation but no etag and last-modified is found!";
+        uncacheable_reason = "Requires validation but no etag or last-modified is found!";
         return;
     }
     if (!expires && !(require_validation || immediate_validation)) {
@@ -66,8 +69,10 @@ void HTTPResponse::cacheability() {
 
 void HTTPResponse::set_expire_time() {
     auto it = response.base().find(http::field::cache_control);
-    if (it != response.base().end()) {
-        auto cache_control = it->value().to_string();
+    auto cache_control = it->value().to_string();
+    if (it != response.base().end() && 
+        (cache_control.find("s-maxage=") != std::string::npos || 
+        cache_control.find("max-age=") != std::string::npos)) {
         std::time_t max_age;
         if (cache_control.find("s-maxage=") != std::string::npos) {
             max_age = std::stol(cache_control.substr(cache_control.find("s-maxage=") + 9));
@@ -81,6 +86,7 @@ void HTTPResponse::set_expire_time() {
         auto date = parseTime(it->value().to_string(), "%a, %d %b %Y %H:%M:%S %Z");
         expire_time = date + max_age;
     } else {
+        it = response.base().find(http::field::expires);
         if (response.count(http::field::expires) == 0) {
             throw response_error("No expires field in the reponse!");
         }
@@ -111,7 +117,11 @@ std::string HTTPResponse::status() const {
     if (expires) {
         auto now = std::chrono::system_clock::now();
         auto now_t = std::chrono::system_clock::to_time_t(now);
-        if (now_t >= expire_time) {
+        std::tm gmt_tm;
+        gmtime_r(&now_t, &gmt_tm); // convert to GMT timezone
+        std::time_t now_gmt = std::mktime(&gmt_tm); // convert time1 to time_t
+        if (now_gmt >= expire_time) {
+            //std::string time_str(asctime(localtime(&expire_time)));
             str.append(printTime(expire_time));
             if (require_validation) {
                 str.append(", requires validationV");
