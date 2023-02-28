@@ -171,7 +171,7 @@ int main(int argc, char ** argv) {
         exit(EXIT_FAILURE);
     }
     int port = std::stol(argv[1]);
-    //daemonize();
+    daemonize();
     try {
         run(port);
     } catch (std::exception & e) {
