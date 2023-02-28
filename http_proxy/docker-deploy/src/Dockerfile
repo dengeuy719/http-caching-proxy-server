@@ -7,10 +7,4 @@ RUN touch /var/log/erss/proxy.log
 RUN mkdir app
 COPY . /app/
 WORKDIR /app
-
-# Build the program using Makefile
-RUN make clean
-RUN make
-
-# Set the command to run the program
-CMD ["./Proxy 4321"]
+RUN chmod o+x run.sh

@@ -103,8 +103,6 @@ void handle_GET(HTTPRequest & request) {
 void handle_CONNECT(HTTPRequest & request) {
     int server_fd = request.getServerSocket().native_handle();
     int client_fd = request.getClientSocket().native_handle();
-    Log & log = Log::getInstance();
-    std::string log_content(request.getID() + ": ");
     fd_set read_fdset;
     int max_fd = std::max(server_fd, client_fd);
     http::response<http::dynamic_body> response;
@@ -136,7 +134,6 @@ void handle_CONNECT(HTTPRequest & request) {
             }
         }
     }
-    log.write(log_content + "Tunnel closed");
 }
 
 void daemonize() {

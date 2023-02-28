@@ -1,5 +1,6 @@
 make clean
 make
-./Proxy 12345
-while true do
+./proxy 12345
+while true; do
+    sleep 1
 done
