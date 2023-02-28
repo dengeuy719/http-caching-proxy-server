@@ -38,46 +38,41 @@ void run(int port) {
 }
 
 void * handle_request(void * ptr) {
-    std::unique_ptr<request_args> args((request_args *)ptr);
-    boost::asio::ip::tcp::socket & socket = *(args->socket);
-    boost::asio::io_context & io_context = *(args->context);
-    http::request<http::dynamic_body> request;
-    boost::beast::flat_buffer buffer;
     try {
+        std::unique_ptr<request_args> args((request_args *)ptr);
+        boost::asio::ip::tcp::socket & socket = *(args->socket);
+        boost::asio::io_context & io_context = *(args->context);
+        http::request<http::dynamic_body> request;
+        boost::beast::flat_buffer buffer;
         http::read(socket, buffer, request);
-    } catch (boost::wrapexcept<boost::system::system_error> & e) {
-        http::response<http::string_body> response;
-        response.result(http::status::bad_request);
-        response.prepare_payload();
-        http::write(socket, response);
-        Log::getInstance().write("(no-id): NOTE Rejected a malformed request.");
-        pthread_exit(nullptr);
-    }
-    HTTPRequest req(request, socket, io_context);
-    try {
-        if (request.method() == http::verb::get) {
-            handle_GET(req);
-        } else if (request.method() == http::verb::post) {
-            http::response<http::dynamic_body> response = req.send();
+        HTTPRequest req(request, socket, io_context);
+        try {
+            if (request.method() == http::verb::get) {
+                handle_GET(req);
+            } else if (request.method() == http::verb::post) {
+                http::response<http::dynamic_body> response = req.send();
+                req.sendBack(response);
+            } else if (request.method() == http::verb::connect) {
+                handle_CONNECT(req);
+                Log::getInstance().write(req.getID() + ": Tunnel closed");
+            }
+        } catch (response_error & e) {
+            http::response<http::dynamic_body> response;
+            response.result(http::status::bad_gateway);
+            response.prepare_payload();
             req.sendBack(response);
-        } else if (request.method() == http::verb::connect) {
-            handle_CONNECT(req);
-            Log::getInstance().write(req.getID() + ": Tunnel closed");
+            Log::getInstance().write(req.getID() + ": ERROR Bad response. Reason: " + std::string(e.what()));
+        } catch (request_error & e) {
+            http::response<http::dynamic_body> response;
+            response.result(http::status::bad_request);
+            response.prepare_payload();
+            req.sendBack(response);
+            Log::getInstance().write(req.getID() + ": ERROR Bad request. Reason: " + std::string(e.what()));
         }
-    } catch (response_error & e) {
-        http::response<http::dynamic_body> response;
-        response.result(http::status::bad_gateway);
-        response.prepare_payload();
-        req.sendBack(response);
-        Log::getInstance().write(req.getID() + ": ERROR Bad response. Reason: " + std::string(e.what()));
-    } catch (request_error & e) {
-        http::response<http::dynamic_body> response;
-        response.result(http::status::bad_request);
-        response.prepare_payload();
-        req.sendBack(response);
-        Log::getInstance().write(req.getID() + ": ERROR Bad request. Reason: " + std::string(e.what()));
+    } catch (boost::wrapexcept<boost::system::system_error> & e) {
+        Log::getInstance().write("(no-id): NOTE Rejected a malformed request.");
     } catch (std::exception & e) {
-        Log::getInstance().write(req.getID() + ": ERROR " + std::string(e.what()));
+        Log::getInstance().write("(no-id): ERROR " + std::string(e.what()));
     }
     pthread_exit(nullptr);
 }

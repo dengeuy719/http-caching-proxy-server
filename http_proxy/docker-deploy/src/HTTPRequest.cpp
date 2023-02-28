@@ -39,7 +39,11 @@ HTTPRequest::HTTPRequest(http::request<http::dynamic_body> _request, boost::asio
     // Resolve host and port
     boost::asio::ip::tcp::resolver resolver(io_context);
     boost::asio::ip::tcp::resolver::results_type endpoints = resolver.resolve(host, port);
-    boost::asio::connect(*serverSocket, endpoints);
+    try {
+        boost::asio::connect(*serverSocket, endpoints);
+    } catch (boost::wrapexcept<boost::system::system_error> & e) {
+        throw request_error("invalid endpoint");
+    }
     printRequset();
 }
 
@@ -81,18 +85,19 @@ void HTTPRequest::printRequset() const {
 http::response<http::dynamic_body> HTTPRequest::send(const http::request<http::dynamic_body> & req) const {
     Log & log = Log::getInstance();
     // Send the request to the server.
-    boost::system::error_code ec;
-    http::write(*serverSocket, req, ec);
-    if (ec) {
-        throw request_error("can't send request to server");
+    try {
+        http::write(*serverSocket, req);
+    } catch (boost::wrapexcept<boost::system::system_error> & e) {
+        throw request_error("cannot sent to the server!");
     }
     log.write(ID + ": Requesting \"" + request_line() + "\" from " + getHeader("Host"));
     // Read the response from the server.
     http::response<http::dynamic_body> response;
     boost::beast::flat_buffer buffer;
-    http::read(*serverSocket, buffer, response, ec);
-    if (ec) {
-        throw response_error("can't get response from the server");
+    try {
+        http::read(*serverSocket, buffer, response);
+    } catch (boost::wrapexcept<boost::system::system_error> & e) {
+        throw response_error("cannot receive response from the server");
     }
     std::stringstream response_line; 
     response_line << 
