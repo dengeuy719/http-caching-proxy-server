@@ -7,9 +7,6 @@ namespace http = boost::beast::http;
 
 void HTTPResponse::cacheability() {
     // To check if the response can be validated.
-    auto etag = response[boost::beast::http::field::etag];
-    std::cout << "etag: "<< etag <<std::endl;
-
     if (response.count(http::field::etag)) {
         can_validate = true;
     }
@@ -116,10 +113,9 @@ std::string HTTPResponse::status() const {
         auto now = std::chrono::system_clock::now();
         auto now_t = std::chrono::system_clock::to_time_t(now);
         std::tm gmt_tm;
-        gmtime_r(&now_t, &gmt_tm); // convert to GMT timezone
-        std::time_t now_gmt = std::mktime(&gmt_tm); // convert time1 to time_t
+        gmtime_r(&now_t, &gmt_tm); 
+        std::time_t now_gmt = std::mktime(&gmt_tm); 
         if (now_gmt >= expire_time) {
-            //std::string time_str(asctime(localtime(&expire_time)));
             str.append(printTime(expire_time));
             if (require_validation) {
                 str.append(", requires validationV");
