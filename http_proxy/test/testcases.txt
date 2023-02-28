@@ -27,12 +27,10 @@
         ->in cache, requires validation
         http://mockbin.org/bin/3c210f09-6b33-40e1-bc3c-d41c2d6fb60d?foo=bar&foo=baz
 
-
         True: can_validate, require_validation
         not in cache -> cached, but requires re-validation -> ERROR Bad response. 
                 Reason: This response will neither expire nor require re-validation!
         http://mockbin.org/bin/26da0b03-8022-40bf-8ab2-d23c0a7ef612?foo=bar&foo=baz
-
 
         True: ETag, expires
         http://mockbin.org/bin/4ec7ca8a-ad32-4dac-bf0f-79967a6dc5fe?foo=bar&foo=baz
@@ -42,14 +40,11 @@
         True: Expires(wrong format) with Cache-Control 
         http://mockbin.org/bin/b8303f93-62a3-4535-b33a-018f1c7af8f9?foo=bar&foo=baz
 
-
         resolving time comparing:
                 not in cache -> cached, but expires at Mon Feb 27 04:50:28 2023 ->
                 in cache, valid -> in cache, but expired at Mon Feb 27 04:50:28 2023
         True: Cache-Control(max-age=60)
         http://mockbin.org/bin/759def78-b259-4d49-8a3d-bc649612e185?foo=bar&foo=baz
-
-
 
     http website for testing:
         http://www.njrsks.net/
