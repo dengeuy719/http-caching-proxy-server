@@ -12,7 +12,7 @@
 
 namespace http = boost::beast::http;
 
-#define MAX_SIZE 1000
+#define MAX_SIZE 5000
 
 class Cache {
 private:
